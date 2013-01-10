@@ -107,19 +107,19 @@ module Resque
       end
 
       def deliver
-        return deliver! if environment_excluded?
+        return deliver_unqueued if environment_excluded?
 
         if @mailer_class.deliver?
           begin
             resque.enqueue(@mailer_class, @method_name, *@args)
           rescue Errno::ECONNREFUSED
-            deliver!
+            deliver_unqueued
           end
         end
       end
 
       def deliver_at(time)
-        return deliver! if environment_excluded?
+        return deliver_unqueued if environment_excluded?
 
         unless resque.respond_to? :enqueue_at
           raise "You need to install resque-scheduler to use deliver_at"
@@ -131,7 +131,7 @@ module Resque
       end
 
       def deliver_in(time)
-        return deliver! if environment_excluded?
+        return deliver_unqueued if environment_excluded?
 
         unless resque.respond_to? :enqueue_in
           raise "You need to install resque-scheduler to use deliver_in"
@@ -144,6 +144,10 @@ module Resque
 
       def deliver!
         actual_message.deliver!
+      end
+
+      def deliver_unqueued
+        actual_message.deliver
       end
 
       def method_missing(method_name, *args)
